@@ -27,6 +27,7 @@ out/
 !.env.example
 !.env.dev.example
 !.env.prod.example
+mosquitto/config/passwd
 
 # Logs and runtime files
 *.log
