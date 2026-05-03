@@ -42,29 +42,3 @@ services:
       MQTT_USERNAME: ${MQTT_USERNAME:?MQTT_USERNAME is required}
       MQTT_PASSWORD: ${MQTT_PASSWORD:?MQTT_PASSWORD is required}
     restart: unless-stopped
-
-  frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-      args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api}
-    container_name: nexora-frontend
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-  reverse-proxy:
-    build:
-      context: .
-      dockerfile: infra/nginx/Dockerfile
-    container_name: nexora-proxy
-    depends_on:
-      - frontend
-      - backend
-    restart: unless-stopped
-    environment:
-      APP_BASIC_AUTH_USERNAME: ${APP_BASIC_AUTH_USERNAME:?APP_BASIC_AUTH_USERNAME is required}
-      APP_BASIC_AUTH_PASSWORD: ${APP_BASIC_AUTH_PASSWORD:?APP_BASIC_AUTH_PASSWORD is required}
-    ports:
-      - "${PROXY_PORT:-80}:80"

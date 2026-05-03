@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name _;
+    server_name ${APP_DOMAIN};
 
     location /api/ {
         auth_basic "Restricted Control API";

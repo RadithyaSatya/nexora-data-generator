@@ -1,6 +1,6 @@
 # Nexora Data Generator
 
-Project ini sekarang bisa dijalankan full via Docker:
+Project ini sekarang dipisah jelas untuk mode development dan production:
 
 - Mosquitto MQTT broker
 - FastAPI control API
@@ -23,42 +23,73 @@ Project ini sekarang bisa dijalankan full via Docker:
 
 ## Service yang tersedia
 
-- Public app via reverse proxy: `http://localhost`
+- Dev frontend: `http://localhost:3000`
+- Dev backend: `http://localhost:8000`
+- Production/public app via reverse proxy: `http://localhost`
 - MQTT broker TCP: `localhost:1883`
 - MQTT broker WebSocket: `localhost:9001`
 
 ## Cara menjalankan
 
-Sebelum menjalankan container, buat file `.env` dari contoh:
+### Development
+
+Buat file env dev:
 
 ```bash
-cp .env.example .env
+cp .env.dev.example .env
 ```
 
-Isi credential broker:
+Jalankan:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Atau background:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+Buka:
+
+```text
+http://localhost:3000/control
+```
+
+### Production
+
+Sebelum menjalankan container production, buat file `.env` dari contoh:
+
+```bash
+cp .env.prod.example .env
+```
+
+Isi credential broker, domain, dan panel:
 
 ```env
 MQTT_USERNAME=nexora
 MQTT_PASSWORD=ganti-password-yang-kuat
+APP_DOMAIN=panel.domainanda.com
 APP_BASIC_AUTH_USERNAME=admin
 APP_BASIC_AUTH_PASSWORD=ganti-password-panel
 MQTT_PORT=1883
 MQTT_WS_PORT=9001
 PROXY_PORT=80
 NEXT_PUBLIC_API_BASE_URL=/api
-CORS_ALLOW_ORIGINS=http://localhost
+CORS_ALLOW_ORIGINS=https://panel.domainanda.com
 ```
 
-Dari root project:
+Jalankan:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 ```
 
 Kalau ingin jalan di background:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 Lalu buka:
@@ -70,13 +101,13 @@ http://localhost/control
 ## Cara stop
 
 ```bash
-docker compose down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 ```
 
 Kalau ingin hapus image juga:
 
 ```bash
-docker compose down --rmi local
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down --rmi local
 ```
 
 ## Alur sistem
@@ -175,6 +206,8 @@ curl -X POST http://localhost:8000/control-all \
 - Port host bisa diatur dari `.env`
 - Frontend sekarang build production dengan `next build` lalu jalan via `next start`
 - Reverse proxy Nginx jadi entrypoint publik utama
+- `server_name` Nginx production dibentuk dari `APP_DOMAIN`
+- Compose sekarang dipisah jadi mode `dev` dan `prod`
 - Backend membaca `MQTT_HOST` dan `MQTT_PORT` dari environment
 - Backend juga membaca `MQTT_USERNAME` dan `MQTT_PASSWORD`
 - Backend juga membaca `CORS_ALLOW_ORIGINS`
@@ -190,25 +223,26 @@ Port publik aplikasi sekarang diatur lewat `PROXY_PORT`. Frontend dan backend ti
 Contoh:
 
 ```env
+APP_DOMAIN=panel.domainanda.com
 APP_BASIC_AUTH_USERNAME=admin
 APP_BASIC_AUTH_PASSWORD=password-panel-yang-kuat
 MQTT_PORT=1884
 MQTT_WS_PORT=9002
 PROXY_PORT=8080
 NEXT_PUBLIC_API_BASE_URL=/api
-CORS_ALLOW_ORIGINS=https://your-domain.com,http://YOUR_VPS_IP:8080
+CORS_ALLOW_ORIGINS=https://panel.domainanda.com
 ```
 
 Lalu jalankan ulang:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-Kalau deploy dengan domain, akses aplikasi nanti cukup lewat satu URL:
+Kalau deploy dengan domain, arahkan DNS subdomain itu ke IP VPS, lalu akses aplikasi lewat:
 
 ```text
-https://your-domain.com
+https://panel.domainanda.com
 ```
 
 Saat membuka `/control`, browser akan meminta username/password Basic Auth dari:
@@ -241,4 +275,6 @@ mosquitto_pub -h localhost -p 1883 -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" \
 - Control API: [backend/main.py](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/backend/main.py:1)
 - Simulation generator: [simulation/generator.py](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/simulation/generator.py:1)
 - Frontend page: [app/control/page.tsx](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/app/control/page.tsx:1)
-- Docker orchestration: [docker-compose.yml](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/docker-compose.yml:1)
+- Base compose: [docker-compose.yml](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/docker-compose.yml:1)
+- Dev compose: [docker-compose.dev.yml](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/docker-compose.dev.yml:1)
+- Prod compose: [docker-compose.prod.yml](/Users/macbook/Workdir/Personal/Projects/nexora/data-generator/docker-compose.prod.yml:1)
