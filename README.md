@@ -71,6 +71,7 @@ Isi credential broker, domain, dan panel:
 MQTT_USERNAME=nexora
 MQTT_PASSWORD=ganti-password-yang-kuat
 APP_DOMAIN=panel.domainanda.com
+MQTT_DOMAIN=mqtt.domainanda.com
 APP_BASIC_AUTH_USERNAME=admin
 APP_BASIC_AUTH_PASSWORD=ganti-password-panel
 MQTT_PORT=1883
@@ -224,6 +225,7 @@ Contoh:
 
 ```env
 APP_DOMAIN=panel.domainanda.com
+MQTT_DOMAIN=mqtt.domainanda.com
 APP_BASIC_AUTH_USERNAME=admin
 APP_BASIC_AUTH_PASSWORD=password-panel-yang-kuat
 MQTT_PORT=1884
@@ -239,10 +241,27 @@ Lalu jalankan ulang:
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-Kalau deploy dengan domain, arahkan DNS subdomain itu ke IP VPS, lalu akses aplikasi lewat:
+Kalau deploy dengan domain, arahkan DNS subdomain-subdomain ini ke IP VPS:
+
+- `APP_DOMAIN` untuk panel web
+- `MQTT_DOMAIN` untuk broker MQTT
+
+Lalu akses aplikasi lewat:
 
 ```text
 https://panel.domainanda.com
+```
+
+Dan koneksi MQTT publik lewat:
+
+```text
+mqtt.domainanda.com:1884
+```
+
+atau WebSocket:
+
+```text
+mqtt.domainanda.com:9002
 ```
 
 Saat membuka `/control`, browser akan meminta username/password Basic Auth dari:
@@ -258,14 +277,14 @@ Kalau subscribe dari host:
 
 ```bash
 source .env
-mosquitto_sub -h localhost -p 1883 -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t 'energy/#' -v
+mosquitto_sub -h "$MQTT_DOMAIN" -p "$MQTT_PORT" -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t 'energy/#' -v
 ```
 
 Kalau publish manual dari host:
 
 ```bash
 source .env
-mosquitto_pub -h localhost -p 1883 -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" \
+mosquitto_pub -h "$MQTT_DOMAIN" -p "$MQTT_PORT" -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" \
   -t 'energy/C01/U01/control' \
   -m '{"device":"lamp","state":true}'
 ```
