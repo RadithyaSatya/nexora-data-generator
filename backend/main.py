@@ -14,6 +14,7 @@ MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "*")
 VALID_DEVICES = {"ac", "lamp", "tv", "washing_machine", "charger"}
 TOTAL_UNITS = 20
+DEFAULT_COMMUNITY_ID = "C01"
 
 
 class ControlRequest(BaseModel):
@@ -30,6 +31,16 @@ class ControlAllRequest(BaseModel):
 
 
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+unit_states = {
+    f"U{i:02d}": {
+        "ac": False,
+        "lamp": False,
+        "tv": False,
+        "washing_machine": False,
+        "charger": False,
+    }
+    for i in range(1, TOTAL_UNITS + 1)
+}
 
 if MQTT_USERNAME and MQTT_PASSWORD:
     mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
@@ -64,6 +75,28 @@ def publish_control(community_id: str, unit_id: str, device: str, state: bool) -
         raise HTTPException(status_code=500, detail="Failed to publish MQTT control message")
 
 
+def on_connect(client, userdata, flags, reason_code, properties=None):
+    client.subscribe(f"energy/+/+/consumption")
+
+
+def on_message(client, userdata, msg):
+    try:
+        payload = json.loads(msg.payload.decode())
+    except json.JSONDecodeError:
+        return
+
+    unit_id = payload.get("unit_id")
+    devices = payload.get("devices")
+
+    if unit_id not in unit_states or not isinstance(devices, dict):
+        return
+
+    next_state = {}
+    for device in VALID_DEVICES:
+        next_state[device] = bool(devices.get(device, False))
+    unit_states[unit_id] = next_state
+
+
 def get_allowed_origins() -> list[str]:
     origins = [origin.strip() for origin in CORS_ALLOW_ORIGINS.split(",") if origin.strip()]
     return origins or ["*"]
@@ -71,6 +104,8 @@ def get_allowed_origins() -> list[str]:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_message = on_message
     mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
     mqtt_client.loop_start()
     try:
@@ -94,6 +129,14 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+
+@app.get("/states")
+async def get_states(community_id: str = DEFAULT_COMMUNITY_ID):
+    return {
+        "community_id": community_id,
+        "units": unit_states,
+    }
 
 
 @app.post("/control")

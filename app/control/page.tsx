@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties, useEffect, useState } from 'react';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
@@ -21,6 +21,10 @@ const devices = [
 type DeviceKey = (typeof devices)[number]['key'];
 type UnitDeviceState = Record<DeviceKey, boolean>;
 type UnitsState = Record<string, UnitDeviceState>;
+type StatesResponse = {
+  community_id: string;
+  units: Record<string, Partial<Record<DeviceKey, boolean>>>;
+};
 
 const initialUnitState: UnitDeviceState = {
   ac: false,
@@ -36,10 +40,58 @@ function buildInitialUnitsState(): UnitsState {
   ) as UnitsState;
 }
 
+function normalizeUnitsState(source?: Record<string, Partial<Record<DeviceKey, boolean>>>): UnitsState {
+  return Object.fromEntries(
+    units.map((unitId) => [
+      unitId,
+      {
+        ...initialUnitState,
+        ...(source?.[unitId] ?? {}),
+      },
+    ])
+  ) as UnitsState;
+}
+
 export default function ControlPage() {
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [unitStates, setUnitStates] = useState<UnitsState>(buildInitialUnitsState);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadStates() {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/states?community_id=${COMMUNITY_ID}`,
+          {
+            cache: 'no-store',
+          }
+        );
+
+        const result = (await response.json()) as StatesResponse;
+        if (!response.ok) {
+          throw new Error('Failed to load current device states');
+        }
+
+        if (isMounted) {
+          setUnitStates(normalizeUnitsState(result.units));
+        }
+      } catch {
+        // Keep the UI usable with default OFF state when sync is unavailable.
+      }
+    }
+
+    void loadStates();
+    const intervalId = window.setInterval(() => {
+      void loadStates();
+    }, 2000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   async function sendControl(unitId: string, device: DeviceKey, state: boolean) {
     const deviceLabel = devices.find((item) => item.key === device)?.label ?? device;

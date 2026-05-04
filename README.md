@@ -144,6 +144,23 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml down --rmi local
 }
 ```
 
+`GET /states?community_id=C01`
+
+```json
+{
+  "community_id": "C01",
+  "units": {
+    "U01": {
+      "ac": true,
+      "lamp": false,
+      "tv": false,
+      "washing_machine": false,
+      "charger": true
+    }
+  }
+}
+```
+
 ## Format payload consumption
 
 Simulator sekarang publish breakdown konsumsi per device dalam JSON, contohnya:
@@ -180,6 +197,8 @@ Perilaku simulator saat ini:
 - device yang `OFF` akan mengirim nilai `0.0`
 - device yang `ON` akan selalu mengirim konsumsi `kWh` pada setiap publish
 - `base_load_kwh` tetap ada, tapi kecil, supaya unit yang idle masih terlihat hidup
+- backend subscribe topic `consumption` untuk menyimpan snapshot state device terbaru
+- halaman `/control` mengambil state awal dari backend dan refresh sinkronisasi tiap 2 detik
 
 ## Test manual backend
 
