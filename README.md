@@ -7,6 +7,8 @@ Project ini sekarang dipisah jelas untuk mode development dan production:
 - Python simulation generator
 - Next.js control panel
 
+Generator sekarang memakai waktu nyata server. Timestamp payload mengikuti jam dunia nyata, bukan simulasi waktu yang lompat cepat.
+
 ## Struktur
 
 ```text
@@ -169,7 +171,7 @@ Simulator sekarang publish breakdown konsumsi per device dalam JSON, contohnya:
 {
   "community_id": "C01",
   "unit_id": "U01",
-  "timestamp": "2026-05-03T18:00:00",
+  "timestamp": "2026-05-08T19:24:00",
   "base_load_kwh": 0.512,
   "device_consumption_kwh": {
     "ac": 0.941,
@@ -192,13 +194,17 @@ Simulator sekarang publish breakdown konsumsi per device dalam JSON, contohnya:
 
 Perilaku simulator saat ini:
 
-- semua device default `OFF`
-- generator tetap publish setiap 1 detik untuk semua unit
+- generator memakai jam server saat ini untuk field `timestamp`
+- generator publish real-time setiap `60` detik secara default
+- device menyala mengikuti pola jam normal harian, misalnya lamp lebih aktif sore-malam dan TV lebih aktif malam hari
+- kontrol manual dari panel akan override perilaku otomatis untuk device yang dipilih
 - device yang `OFF` akan mengirim nilai `0.0`
 - device yang `ON` akan selalu mengirim konsumsi `kWh` pada setiap publish
 - `base_load_kwh` tetap ada, tapi kecil, supaya unit yang idle masih terlihat hidup
 - backend subscribe topic `consumption` untuk menyimpan snapshot state device terbaru
 - halaman `/control` mengambil state awal dari backend dan refresh sinkronisasi tiap 2 detik
+
+Kalau ingin ubah interval publish, set env `PUBLISH_INTERVAL_SECONDS`. Default-nya `60`.
 
 ## Test manual backend
 
