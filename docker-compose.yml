@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: mosquitto/Dockerfile
-    container_name: nexora-mqtt
+    container_name: nexora-data-generator-mqtt
     environment:
       MQTT_USERNAME: ${MQTT_USERNAME:?MQTT_USERNAME is required}
       MQTT_PASSWORD: ${MQTT_PASSWORD:?MQTT_PASSWORD is required}
@@ -18,7 +18,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: nexora-backend
+    container_name: nexora-data-generator-backend
     depends_on:
       - mqtt-broker
     environment:
@@ -33,7 +33,7 @@ services:
     build:
       context: .
       dockerfile: simulation/Dockerfile
-    container_name: nexora-simulator
+    container_name: nexora-data-generator-simulator
     depends_on:
       - mqtt-broker
     environment:

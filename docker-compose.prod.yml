@@ -5,7 +5,7 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api}
-    container_name: nexora-frontend
+    container_name: nexora-data-generator-frontend
     depends_on:
       - backend
     restart: unless-stopped
@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: infra/nginx/Dockerfile
-    container_name: nexora-proxy
+    container_name: nexora-data-generator-proxy
     depends_on:
       - frontend
       - backend
